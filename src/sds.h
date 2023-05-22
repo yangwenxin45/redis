@@ -38,9 +38,13 @@
 
 typedef char *sds;
 
+// 简单动态字符串
 struct sdshdr {
+    // 记录buf数组中已使用字节的数量，等于SDS所保存字符串的长度
     unsigned int len;
+    // 记录buf数组中未使用字节的数量
     unsigned int free;
+    // 字节数组，用于保存字符串
     char buf[];
 };
 
@@ -55,17 +59,37 @@ static inline size_t sdsavail(const sds s) {
 }
 
 sds sdsnewlen(const void *init, size_t initlen);
+
+// 创建一个包含给定字符串的SDS
 sds sdsnew(const char *init);
+
+// 创建一个不包含任何内容的空SDS
 sds sdsempty(void);
+
+// 返回SDS的已使用空间字节数
 size_t sdslen(const sds s);
+
+// 返回一个给定SDS的副本
 sds sdsdup(const sds s);
+
+// 释放给定的SDS
 void sdsfree(sds s);
+
+// 返回SDS的未使用空间字节数
 size_t sdsavail(const sds s);
+
+// 用空字符将SDS扩展至给定长度
 sds sdsgrowzero(sds s, size_t len);
 sds sdscatlen(sds s, const void *t, size_t len);
+
+// 将给定字符串拼接到SDS字符串的末尾
 sds sdscat(sds s, const char *t);
+
+// 将给定SDS字符串拼接到另一个SDS字符串的末尾
 sds sdscatsds(sds s, const sds t);
 sds sdscpylen(sds s, const char *t, size_t len);
+
+// 将给定字符串复制到SDS里面，覆盖SDS原有的字符串
 sds sdscpy(sds s, const char *t);
 
 sds sdscatvprintf(sds s, const char *fmt, va_list ap);
@@ -77,10 +101,18 @@ sds sdscatprintf(sds s, const char *fmt, ...);
 #endif
 
 sds sdscatfmt(sds s, char const *fmt, ...);
+
+// 接受一个SDS和一个字符串作为参数，从SDS中移除所有在字符串中出现过的字符
 sds sdstrim(sds s, const char *cset);
+
+// 保留SDS给定区间内的数据，不在区间内的数据会被覆盖或清除
 void sdsrange(sds s, int start, int end);
 void sdsupdatelen(sds s);
+
+// 清空SDS保存的字符串内容
 void sdsclear(sds s);
+
+// 对比两个SDS字符串是否相同
 int sdscmp(const sds s1, const sds s2);
 sds *sdssplitlen(const char *s, int len, const char *sep, int seplen, int *count);
 void sdsfreesplitres(sds *tokens, int count);
