@@ -599,19 +599,30 @@ struct sharedObjectsStruct {
 };
 
 /* ZSETs use a specialized version of Skiplists */
+// 跳跃表节点
 typedef struct zskiplistNode {
+    // 成员对象
     robj *obj;
+    // 分值
     double score;
+    // 后退指针
     struct zskiplistNode *backward;
+    // 层
     struct zskiplistLevel {
+        // 前进指针
         struct zskiplistNode *forward;
+        // 跨度
         unsigned int span;
     } level[];
 } zskiplistNode;
 
+// 跳跃表
 typedef struct zskiplist {
+    // 指向跳跃表的表头节点和表尾节点的指针
     struct zskiplistNode *header, *tail;
+    // 表中节点的数量（表头节点不计算在内）
     unsigned long length;
+    // 表中层数最大的节点的层数（表头节点层数不计算在内）
     int level;
 } zskiplist;
 
@@ -1228,18 +1239,31 @@ typedef struct {
     int minex, maxex; /* are min or max exclusive? */
 } zlexrangespec;
 
+// 创建一个新的跳跃表
 zskiplist *zslCreate(void);
+
+// 释放给定跳跃表，以及表中包含的所有节点
 void zslFree(zskiplist *zsl);
+
+// 将包含给定成员和分值的新节点添加到跳跃表中
 zskiplistNode *zslInsert(zskiplist *zsl, double score, robj *obj);
 unsigned char *zzlInsert(unsigned char *zl, robj *ele, double score);
+
+// 删除跳跃表中包含给定成员和分值的节点
 int zslDelete(zskiplist *zsl, double score, robj *obj);
+
+// 给定一个分值范围，返回跳跃表中第一个符合这个范围的节点
 zskiplistNode *zslFirstInRange(zskiplist *zsl, zrangespec *range);
+
+// 给定一个分值范围，返回跳跃表中最后一个符合这个范围的节点
 zskiplistNode *zslLastInRange(zskiplist *zsl, zrangespec *range);
 double zzlGetScore(unsigned char *sptr);
 void zzlNext(unsigned char *zl, unsigned char **eptr, unsigned char **sptr);
 void zzlPrev(unsigned char *zl, unsigned char **eptr, unsigned char **sptr);
 unsigned int zsetLength(robj *zobj);
 void zsetConvert(robj *zobj, int encoding);
+
+// 返回包含给定成员和分值的节点在跳跃表中的排位
 unsigned long zslGetRank(zskiplist *zsl, double score, robj *o);
 
 /* Core functions */
