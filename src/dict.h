@@ -44,39 +44,65 @@
 /* Unused arguments generate annoying warnings... */
 #define DICT_NOTUSED(V) ((void) V)
 
+// 哈希表节点
 typedef struct dictEntry {
+    // 键
     void *key;
+    // 值
     union {
         void *val;
         uint64_t u64;
         int64_t s64;
         double d;
     } v;
+    // 指向下个哈希表节点，形成链表
     struct dictEntry *next;
 } dictEntry;
 
+// 类型特定函数
 typedef struct dictType {
+    // 计算哈希值的函数
     unsigned int (*hashFunction)(const void *key);
+
+    // 复制键的函数
     void *(*keyDup)(void *privdata, const void *key);
+
+    // 复制值得函数
     void *(*valDup)(void *privdata, const void *obj);
+
+    // 对比键的函数
     int (*keyCompare)(void *privdata, const void *key1, const void *key2);
+
+    // 销毁键的函数
     void (*keyDestructor)(void *privdata, void *key);
+
+    // 销毁值得函数
     void (*valDestructor)(void *privdata, void *obj);
 } dictType;
 
 /* This is our hash table structure. Every dictionary has two of this as we
  * implement incremental rehashing, for the old to the new table. */
+// 哈希表
 typedef struct dictht {
+    // 哈希表数组
     dictEntry **table;
+    // 哈希表大小
     unsigned long size;
+    // 哈希表大小掩码，用于计算索引值，总是等于size-1
     unsigned long sizemask;
+    // 该哈希表已有节点的数量
     unsigned long used;
 } dictht;
 
+// 字典
 typedef struct dict {
+    // 类型特定函数，保存了一簇用于操作特定类型键值对的函数
     dictType *type;
+    // 私有数据，保存了需要传给类型特定函数的可选参数
     void *privdata;
+    // 哈希表
     dictht ht[2];
+    // rehash索引，当rehash不在进行时，值为-1
     long rehashidx; /* rehashing not in progress if rehashidx == -1 */
     int iterators; /* number of iterators currently running */
 } dict;
@@ -147,22 +173,35 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
 #define dictIsRehashing(d) ((d)->rehashidx != -1)
 
 /* API */
+// 创建一个新的字典
 dict *dictCreate(dictType *type, void *privDataPtr);
 int dictExpand(dict *d, unsigned long size);
+
+// 将给定的键值对添加到字典里面
 int dictAdd(dict *d, void *key, void *val);
 dictEntry *dictAddRaw(dict *d, void *key);
+
+// 将给定的键值对添加到字典里面，如果键已经存在于字典，那么用新值取代原有的值
 int dictReplace(dict *d, void *key, void *val);
 dictEntry *dictReplaceRaw(dict *d, void *key);
+
+// 从字典中删除给定键所对应的键值对
 int dictDelete(dict *d, const void *key);
 int dictDeleteNoFree(dict *d, const void *key);
+
+// 释放给定字典，以及字典中包含的所有键值对
 void dictRelease(dict *d);
 dictEntry * dictFind(dict *d, const void *key);
+
+// 返回给定键的值
 void *dictFetchValue(dict *d, const void *key);
 int dictResize(dict *d);
 dictIterator *dictGetIterator(dict *d);
 dictIterator *dictGetSafeIterator(dict *d);
 dictEntry *dictNext(dictIterator *iter);
 void dictReleaseIterator(dictIterator *iter);
+
+// 从字典中随机返回一个键值对
 dictEntry *dictGetRandomKey(dict *d);
 unsigned int dictGetSomeKeys(dict *d, dictEntry **des, unsigned int count);
 void dictPrintStats(dict *d);
