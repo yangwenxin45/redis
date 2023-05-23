@@ -424,11 +424,17 @@ typedef long long mstime_t; /* millisecond time type. */
 #define REDIS_LRU_BITS 24
 #define REDIS_LRU_CLOCK_MAX ((1<<REDIS_LRU_BITS)-1) /* Max value of obj->lru */
 #define REDIS_LRU_CLOCK_RESOLUTION 1000 /* LRU clock resolution in ms */
+// 对象
 typedef struct redisObject {
+    // 对象的类型（字符串对象、列表对象、哈希对象、集合对象、有序集合对象）
     unsigned type:4;
+    // 对象所使用的编码，这个对象使用了什么数据结构作为底层实现
     unsigned encoding:4;
+    // 对象最后一次被命令程序访问的时间
     unsigned lru:REDIS_LRU_BITS; /* lru time (relative to server.lruclock) */
+    // 引用计数
     int refcount;
+    // 指向底层实现数据结构的指针
     void *ptr;
 } robj;
 
@@ -626,8 +632,11 @@ typedef struct zskiplist {
     int level;
 } zskiplist;
 
+// 有序集合对象
 typedef struct zset {
+    // 字典
     dict *dict;
+    // 跳跃表
     zskiplist *zsl;
 } zset;
 
@@ -1135,9 +1144,14 @@ void discardTransaction(redisClient *c);
 void flagTransaction(redisClient *c);
 
 /* Redis object implementation */
+// 将对象的引用计数值减一，当对象的引用计数值等于0时，释放对象
 void decrRefCount(robj *o);
 void decrRefCountVoid(void *o);
+
+// 将对象的引用计数值增一
 void incrRefCount(robj *o);
+
+// 将对象的引用计数值设置为0，但并不释放对象，这个函数通常在需要重新设置对象的引用计数值时使用
 robj *resetRefCount(robj *obj);
 void freeStringObject(robj *o);
 void freeListObject(robj *o);
