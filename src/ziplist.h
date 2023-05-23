@@ -31,16 +31,39 @@
 #define ZIPLIST_HEAD 0
 #define ZIPLIST_TAIL 1
 
+// 创建一个新的压缩列表
 unsigned char *ziplistNew(void);
+
+// 创建一个包含给定值的新节点，并将这个新节点添加到压缩列表的表头或者表尾
 unsigned char *ziplistPush(unsigned char *zl, unsigned char *s, unsigned int slen, int where);
+
+// 返回压缩列表给定索引上的节点
 unsigned char *ziplistIndex(unsigned char *zl, int index);
+
+// 返回给定节点的下一个节点
 unsigned char *ziplistNext(unsigned char *zl, unsigned char *p);
+
+// 返回给定节点的前一个节点
 unsigned char *ziplistPrev(unsigned char *zl, unsigned char *p);
+
+// 获取给定节点所保存的值
 unsigned int ziplistGet(unsigned char *p, unsigned char **sval, unsigned int *slen, long long *lval);
+
+// 将包含给定值得新节点插入到给定节点之后
 unsigned char *ziplistInsert(unsigned char *zl, unsigned char *p, unsigned char *s, unsigned int slen);
+
+// 从压缩列表中删除给定的节点
 unsigned char *ziplistDelete(unsigned char *zl, unsigned char **p);
+
+// 删除压缩列表在给定索引上的连续多个节点
 unsigned char *ziplistDeleteRange(unsigned char *zl, unsigned int index, unsigned int num);
 unsigned int ziplistCompare(unsigned char *p, unsigned char *s, unsigned int slen);
+
+// 在压缩列表中查找并返回包含了给定值的节点
 unsigned char *ziplistFind(unsigned char *p, unsigned char *vstr, unsigned int vlen, unsigned int skip);
+
+// 返回压缩列表目前包含的节点数量
 unsigned int ziplistLen(unsigned char *zl);
+
+// 返回压缩列表目前占用的内存字节数
 size_t ziplistBlobLen(unsigned char *zl);
