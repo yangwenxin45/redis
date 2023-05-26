@@ -716,6 +716,7 @@ werr: /* Write error. */
 }
 
 /* Save the DB on disk. Return REDIS_ERR on error, REDIS_OK on success. */
+// 创建RDB文件
 int rdbSave(char *filename) {
     char tmpfile[256];
     FILE *fp;
@@ -726,7 +727,7 @@ int rdbSave(char *filename) {
     fp = fopen(tmpfile,"w");
     if (!fp) {
         redisLog(REDIS_WARNING, "Failed opening .rdb for saving: %s",
-            strerror(errno));
+                 strerror(errno));
         return REDIS_ERR;
     }
 
@@ -754,7 +755,7 @@ int rdbSave(char *filename) {
     server.lastbgsave_status = REDIS_OK;
     return REDIS_OK;
 
-werr:
+    werr:
     redisLog(REDIS_WARNING,"Write error saving DB on disk: %s", strerror(errno));
     fclose(fp);
     unlink(tmpfile);
@@ -1126,6 +1127,7 @@ void rdbLoadProgressCallback(rio *r, const void *buf, size_t len) {
     }
 }
 
+// 载入RDB文件
 int rdbLoad(char *filename) {
     uint32_t dbid;
     int type, rdbver;
@@ -1232,7 +1234,7 @@ int rdbLoad(char *filename) {
     stopLoading();
     return REDIS_OK;
 
-eoferr: /* unexpected end of file is handled here with a fatal exit */
+    eoferr: /* unexpected end of file is handled here with a fatal exit */
     redisLog(REDIS_WARNING,"Short read or OOM loading DB. Unrecoverable error, aborting now.");
     exit(1);
     return REDIS_ERR; /* Just to avoid warning */
