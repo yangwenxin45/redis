@@ -753,6 +753,7 @@ int activeExpireCycleTryExpire(redisDb *db, dictEntry *de, long long now) {
  * executed, where the time limit is a percentage of the REDIS_HZ period
  * as specified by the REDIS_EXPIRELOOKUPS_TIME_PERC define. */
 
+// 定时删除策略的实现
 void activeExpireCycle(int type) {
     /* This function has some global state in order to continue the work
      * incrementally across calls. */
@@ -822,7 +823,7 @@ void activeExpireCycle(int type) {
              * keys is expensive, so stop here waiting for better times...
              * The dictionary will be resized asap. */
             if (num && slots > DICT_HT_INITIAL_SIZE &&
-                (num*100/slots < 1)) break;
+                    (num*100/slots < 1)) break;
 
             /* The main collection cycle. Sample random keys among keys
              * with an expire set, checking for expired ones. */
@@ -865,7 +866,7 @@ void activeExpireCycle(int type) {
             if ((iteration & 0xf) == 0) { /* check once every 16 iterations. */
                 long long elapsed = ustime()-start;
 
-                latencyAddSampleIfNeeded("expire-cycle",elapsed/1000);
+                latencyAddSampleIfNeeded("expire-cycle", elapsed/1000);
                 if (elapsed > timelimit) timelimit_exit = 1;
             }
             if (timelimit_exit) return;
