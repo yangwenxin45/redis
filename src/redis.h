@@ -534,29 +534,42 @@ typedef struct readyList {
 
 /* With multiplexing we need to take per-client state.
  * Clients are taken in a linked list. */
+// 客户端状态
 typedef struct redisClient {
     uint64_t id;            /* Client incremental unique ID. */
+    // 客户端正在使用的套接字描述符
     int fd;
     // 记录客户端当前正在使用的数据库
     redisDb *db;
     int dictid;
+    // 客户端名字
     robj *name;             /* As set by CLIENT SETNAME */
+    // 输入缓冲区用于保存客户端发送的命令请求
     sds querybuf;
     size_t querybuf_peak;   /* Recent (100ms or more) peak of querybuf size */
+    // 命令请求的参数个数
     int argc;
+    // 命令请求的参数
     robj **argv;
+    // cmd属性记录了客户端要执行命令的实现函数
     struct redisCommand *cmd, *lastcmd;
     int reqtype;
     int multibulklen;       /* number of multi bulk arguments left to read */
     long bulklen;           /* length of bulk argument in multi bulk request */
+    // 可变大小的缓冲区用于保存那些长度比较大的回复
     list *reply;
     unsigned long reply_bytes; /* Tot bytes of objects in reply list */
     int sentlen;            /* Amount of bytes already sent in the current
                                buffer or object being sent. */
+    // 创建客户端的时间
     time_t ctime;           /* Client creation time */
+    // 客户端与服务器最后一次进行互动的时间
     time_t lastinteraction; /* time of the last interaction, used for timeout */
+    // 记录了输出缓冲区第一次到达软性限制的时间
     time_t obuf_soft_limit_reached_time;
+    // 记录了客户端的角色以及客户端目前所在的状态
     int flags;              /* REDIS_SLAVE | REDIS_MONITOR | REDIS_MULTI ... */
+    // 记录客户端是否通过了身份验证
     int authenticated;      /* when requirepass is non-NULL */
     int replstate;          /* replication state if this is a slave */
     int repl_put_online_on_ack; /* Install slave write handler on ACK. */
@@ -583,6 +596,7 @@ typedef struct redisClient {
     sds peerid;             /* Cached peer ID. */
 
     /* Response buffer */
+    // 固定大小的缓冲区用于保存那些长度比较小的回复
     int bufpos;
     char buf[REDIS_REPLY_CHUNK_BYTES];
 } redisClient;
@@ -720,6 +734,7 @@ struct redisServer {
     int sofd;                   /* Unix socket file descriptor */
     int cfd[REDIS_BINDADDR_MAX];/* Cluster bus listening socket */
     int cfd_count;              /* Used slots in cfd[] */
+    // 一个链表，保存了所有客户端状态
     list *clients;              /* List of active clients */
     list *clients_to_close;     /* Clients to close asynchronously */
     list *slaves, *monitors;    /* List of slaves and MONITORs */
