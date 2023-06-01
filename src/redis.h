@@ -703,6 +703,7 @@ struct clusterState;
 #undef hz
 #endif
 
+// 服务器状态
 struct redisServer {
     /* General */
     pid_t pid;                  /* Main process pid. */
@@ -713,12 +714,15 @@ struct redisServer {
     dict *commands;             /* Command table */
     dict *orig_commands;        /* Command table before command renaming. */
     aeEventLoop *el;
+    // 保存了服务器的LRU时钟，默认每10秒更新一次的时钟缓存，用于计算键的空转（idle）时长
     unsigned lruclock:REDIS_LRU_BITS; /* Clock for LRU eviction */
+    // 关闭服务器的标识：值为1时，关闭服务器；值为0时，不做动作
     int shutdown_asap;          /* SHUTDOWN needed ASAP */
     int activerehashing;        /* Incremental rehash in serverCron() */
     char *requirepass;          /* Pass for AUTH command, or NULL */
     char *pidfile;              /* PID file path */
     int arch_bits;              /* 32 or 64 depending on sizeof(long) */
+    // serverCron函数的运行次数计数器，serverCron函数每运行一次，这个属性的值就增一
     int cronloops;              /* Number of times the cron function run */
     char runid[REDIS_RUN_ID_SIZE+1];  /* ID always different at every exec. */
     int sentinel_mode;          /* True if this instance is a Sentinel. */
@@ -752,7 +756,7 @@ struct redisServer {
     off_t loading_process_events_interval_bytes;
     /* Fast pointers to often looked up command */
     struct redisCommand *delCommand, *multiCommand, *lpushCommand, *lpopCommand,
-                        *rpopCommand;
+            *rpopCommand;
     /* Fields used only for stats */
     time_t stat_starttime;          /* Server start time */
     long long stat_numcommands;     /* Number of processed commands */
@@ -761,6 +765,7 @@ struct redisServer {
     long long stat_evictedkeys;     /* Number of evicted keys (maxmemory) */
     long long stat_keyspace_hits;   /* Number of successful lookups of keys */
     long long stat_keyspace_misses; /* Number of failed lookups of keys */
+    // 已使用内存峰值
     size_t stat_peak_memory;        /* Max used memory record */
     long long stat_fork_time;       /* Time needed to perform latest fork() */
     double stat_fork_rate;          /* Fork rate in GB/sec. */
@@ -778,9 +783,13 @@ struct redisServer {
     /* The following two are used to track instantaneous metrics, like
      * number of operations per second, network traffic. */
     struct {
+        // 上一次进行抽样的时间
         long long last_sample_time; /* Timestamp of last sample in ms */
+        // 上一次抽样时，服务器已执行命令的数量
         long long last_sample_count;/* Count in last sample */
+        // 环形数组，数组中的每个项都记录了一次抽样结果
         long long samples[REDIS_METRIC_SAMPLES];
+        // 数组的索引值，每次抽样后将值自增一，在值等于16时重置为0，从而构成一个环形数组
         int idx;
     } inst_metric[REDIS_METRIC_COUNT];
     /* Configuration */
@@ -802,7 +811,9 @@ struct redisServer {
     off_t aof_rewrite_min_size;     /* the AOF file is at least N bytes. */
     off_t aof_rewrite_base_size;    /* AOF size on latest startup or rewrite. */
     off_t aof_current_size;         /* AOF current size. */
+    // 如果值为1，那么表示有BGREWRITEAOF命令被延迟了
     int aof_rewrite_scheduled;      /* Rewrite once BGSAVE terminates. */
+    // 记录执行BGREWRITEAOF命令的子进程的ID：如果服务器没有在执行BGREWRITEAOF，那么这个属性的值为-1
     pid_t aof_child_pid;            /* PID if rewriting process */
     list *aof_rewrite_buf_blocks;   /* Hold changes during an AOF rewrite. */
     // AOF缓冲区
@@ -833,6 +844,7 @@ struct redisServer {
     // 修改计数器：记录距离上一次成功执行save命令或者bgsave命令之后，服务器对数据库状态进行了多少次修改
     long long dirty;                /* Changes to DB from the last save */
     long long dirty_before_bgsave;  /* Used to restore dirty on failed BGSAVE */
+    // 记录执行BGSAVE命令的子进程的ID：如果服务器没有执行BGSAVE，那么这个属性的值为-1
     pid_t rdb_child_pid;            /* PID of RDB saving child */
     // 记录了保存条件的数组
     struct saveparam *saveparams;   /* Save points array for RDB */
@@ -930,7 +942,9 @@ struct redisServer {
     size_t zset_max_ziplist_entries;
     size_t zset_max_ziplist_value;
     size_t hll_sparse_max_bytes;
+    // 保存了秒级精度的系统当前UNIX时间戳，每100ms更新一次
     time_t unixtime;        /* Unix time sampled every cron cycle. */
+    // 保存了毫秒级精度的系统当前UNIX时间戳，每100ms更新一次
     long long mstime;       /* Like 'unixtime' but with milliseconds resolution. */
     /* Pubsub */
     dict *pubsub_channels;  /* Map channels to list of subscribed clients */
@@ -978,11 +992,18 @@ typedef struct pubsubPattern {
 
 typedef void redisCommandProc(redisClient *c);
 typedef int *redisGetKeysProc(struct redisCommand *cmd, robj **argv, int argc, int *numkeys);
+
+// 记录了Redis命令的实现信息
 struct redisCommand {
+    // 命令的名字
     char *name;
+    // 函数指针，指向命令的实现函数
     redisCommandProc *proc;
+    // 命令参数的个数，用于检查命令请求的格式是否正确
     int arity;
+    // 字符串形式的标识值，这个值记录了命令的属性
     char *sflags; /* Flags as string representation, one char per flag. */
+    // 对sflags标识进行分析得出的二进制标识，由程序自动生成
     int flags;    /* The actual flags, obtained from the 'sflags' field. */
     /* Use a function to determine keys arguments in a command line.
      * Used for Redis Cluster redirect. */
@@ -991,6 +1012,7 @@ struct redisCommand {
     int firstkey; /* The first argument that's a key (0 = no keys) */
     int lastkey;  /* The last argument that's a key */
     int keystep;  /* The step between first and last key */
+    // 服务器执行这个命令所耗费的总时长，服务器总共执行了多少次这个命令
     long long microseconds, calls;
 };
 
