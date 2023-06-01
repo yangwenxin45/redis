@@ -584,6 +584,7 @@ typedef struct redisClient {
                                        copying this slave output buffer
                                        should use. */
     char replrunid[REDIS_RUN_ID_SIZE+1]; /* master run id if this is a master */
+    // 从服务器的监听端口号
     int slave_listening_port; /* As configured with: SLAVECONF listening-port */
     int slave_capa;         /* Slave capabilities: SLAVE_CAPA_* bitwise OR. */
     multiState mstate;      /* MULTI/EXEC state */
@@ -890,7 +891,9 @@ struct redisServer {
     int repl_diskless_sync_delay;   /* Delay to start a diskless repl BGSAVE. */
     /* Replication (slave) */
     char *masterauth;               /* AUTH with this password with master */
+    // 主服务器的地址
     char *masterhost;               /* Hostname of master */
+    // 主服务器的端口
     int masterport;                 /* Port of master */
     int repl_timeout;               /* Timeout after N seconds of master idle */
     redisClient *master;     /* Client that is master for this slave */
