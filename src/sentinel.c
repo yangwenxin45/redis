@@ -115,11 +115,18 @@ typedef struct sentinelAddr {
 #define SENTINEL_SCRIPT_MAX_RETRY 10
 #define SENTINEL_SCRIPT_RETRY_DELAY 30000 /* 30 seconds between retries. */
 
+// 被Sentinel监视的Redis服务器实例，这个实例可以是主服务器、从服务器，或者另外一个sentinel
 typedef struct sentinelRedisInstance {
+    // 标识值，记录了实例的类型，以及该实例的当前状态
     int flags;      /* See SRI_... defines */
+    // 实例的名字
+    // 主服务器的名字由用户在配置文件中设置，从服务器以及sentinel的名字由sentinel自动设置
     char *name;     /* Master name from the point of view of this sentinel. */
+    // 实例的运行ID
     char *runid;    /* run ID of this instance. */
+    // 配置纪元，用于实现故障转移
     uint64_t config_epoch;  /* Configuration epoch. */
+    // 实例的地址
     sentinelAddr *addr; /* Master host. */
     redisAsyncContext *cc; /* Hiredis context for commands. */
     redisAsyncContext *pc; /* Hiredis context for Pub / Sub. */
@@ -144,6 +151,8 @@ typedef struct sentinelRedisInstance {
                                              SENTINEL is-master-down command. */
     mstime_t s_down_since_time; /* Subjectively down since time. */
     mstime_t o_down_since_time; /* Objectively down since time. */
+    // sentinel down-after-milliseconds选项设定的值
+    // 实例无响应多少毫秒之后才会被判定为主观下线
     mstime_t down_after_period; /* Consider it down after that period. */
     mstime_t info_refresh;  /* Time at which we received INFO output from it. */
 
@@ -159,7 +168,11 @@ typedef struct sentinelRedisInstance {
     /* Master specific. */
     dict *sentinels;    /* Other sentinels monitoring the same master. */
     dict *slaves;       /* Slaves for this master instance. */
+    // sentinel monitor <master-name> <IP> <port> <quorum>选项中的quorum参数
+    // 判断这个实例为客观下线所需的支持投票数量
     unsigned int quorum;/* Number of sentinels that need to agree on failure. */
+    // sentinel parallel-syncs <master-name> <number>选项的值
+    // 在执行故障转移操作时，可以同时对新的主服务器进行同步的从服务器数量
     int parallel_syncs; /* How many slaves to reconfigure at same time. */
     char *auth_pass;    /* Password to use for AUTH against master & slaves. */
 
@@ -182,6 +195,8 @@ typedef struct sentinelRedisInstance {
     int failover_state; /* See SENTINEL_FAILOVER_STATE_* defines. */
     mstime_t failover_state_change_time;
     mstime_t failover_start_time;   /* Last failover attempt start time. */
+    // sentinel failover-timeout <master-name> <ms>选项的值
+    // 刷新故障迁移状态的最大时限
     mstime_t failover_timeout;      /* Max time to refresh failover state. */
     mstime_t failover_delay_logged; /* For what failover_start_time value we
                                        logged the failover delay. */
@@ -193,15 +208,24 @@ typedef struct sentinelRedisInstance {
 } sentinelRedisInstance;
 
 /* Main state. */
+// Sentinel状态
 struct sentinelState {
+    // 当前纪元，用于实现故障转移
     uint64_t current_epoch;     /* Current epoch. */
+    // 保存了所有被这个sentinel监视的主服务器
+    // 字典的键是主服务器的名字，字典的值则是一个指向sentinelRedisInstance结构的指针
     dict *masters;      /* Dictionary of master sentinelRedisInstances.
                            Key is the instance name, value is the
                            sentinelRedisInstance structure pointer. */
+    // 是否进入了TILT模式
     int tilt;           /* Are we in TILT mode? */
+    // 目前正在执行的脚本的数量
     int running_scripts;    /* Number of scripts in execution right now. */
+    // 进入TILT模式的时间
     mstime_t tilt_start_time;   /* When TITL started. */
+    // 最后一次执行时间处理器的时间
     mstime_t previous_time;     /* Last time we ran the time handler. */
+    // 一个FIFO队列，包含了所有需要执行的用户脚本
     list *scripts_queue;    /* Queue of user scripts to execute. */
     char *announce_ip;      /* IP addr that is gossiped to other sentinels if
                                not NULL. */
