@@ -37,11 +37,17 @@
 struct clusterNode;
 
 /* clusterLink encapsulates everything needed to talk with a remote node. */
+// 连接节点所需的有关信息
 typedef struct clusterLink {
+    // 连接的创建时间
     mstime_t ctime;             /* Link creation time */
+    // TCP套接字描述符
     int fd;                     /* TCP socket file descriptor */
+    // 输出缓冲区，保存着等待发送给其他节点的信息
     sds sndbuf;                 /* Packet send buffer */
+    // 输入缓冲区，保存着从其他节点接收到的消息
     sds rcvbuf;                 /* Packet reception buffer */
+    // 与这个连接相关联的节点，如果没有的话就为NULL
     struct clusterNode *node;   /* Node related to this link if any, or NULL */
 } clusterLink;
 
@@ -75,19 +81,33 @@ typedef struct clusterLink {
 
 /* This structure represent elements of node->fail_reports. */
 typedef struct clusterNodeFailReport {
+    // 报告目标节点已经下线的节点
     struct clusterNode *node;  /* Node reporting the failure condition. */
+    // 最后一次从node节点收到下线报告的时间
+    // 程序使用这个时间戳来检查下线报告是否过期（与当前时间相差太久的下线报告会被删除）
     mstime_t time;             /* Time of the last report from this node. */
 } clusterNodeFailReport;
 
+// 节点的当前状态
 typedef struct clusterNode {
+    // 创建节点的时间
     mstime_t ctime; /* Node object creation time. */
+    // 节点的名字，由40个十六进制字符组成
     char name[REDIS_CLUSTER_NAMELEN]; /* Node name, hex string, sha1-size */
+    // 节点标识
+    // 使用各种不同的标识值记录节点的角色（比如主节点或者从节点），以及节点目前所处的状态（比如在线或者下线）
     int flags;      /* REDIS_NODE_... */
+    // 节点当前的配置纪元，用于实现故障转移
     uint64_t configEpoch; /* Last configEpoch observed for this node */
-    unsigned char slots[REDIS_CLUSTER_SLOTS/8]; /* slots handled by this node */
+    // 记录节点负责处理哪些槽
+    unsigned char slots[REDIS_CLUSTER_SLOTS / 8]; /* slots handled by this node */
+    // 记录节点负责处理的槽的数量
     int numslots;   /* Number of slots handled by this node */
+    // 正在复制这个主节点的从节点数量
     int numslaves;  /* Number of slave nodes, if this is a master */
+    // 一个数组，每个数组项指向一个正在复制这个主节点的从节点的clusterNode结构
     struct clusterNode **slaves; /* pointers to slave nodes */
+    // 记录这个节点正在复制的主节点
     struct clusterNode *slaveof; /* pointer to the master node. Note that it
                                     may be NULL even if the node is a slave
                                     if we don't have the master node in our
@@ -99,22 +119,38 @@ typedef struct clusterNode {
     mstime_t repl_offset_time;  /* Unix time we received offset for this node */
     mstime_t orphaned_time;     /* Starting time of orphaned master condition */
     long long repl_offset;      /* Last known repl offset for this node. */
+    // 节点的IP地址
     char ip[REDIS_IP_STR_LEN];  /* Latest known IP address of this node */
+    // 节点的端口号
     int port;                   /* Latest known port of this node */
+    // 保存连接节点所需的有关信息
     clusterLink *link;          /* TCP/IP link with this node */
+    // 一个链表，记录了所有其他节点对该节点的下线报告
     list *fail_reports;         /* List of nodes signaling this as failing */
 } clusterNode;
 
+// 在当前节点的视角下，集群目前所处的状态
 typedef struct clusterState {
+    // 指向当前节点的指针
     clusterNode *myself;  /* This node */
+    // 集群当前的配置纪元，用于实现故障转移
     uint64_t currentEpoch;
+    // 集群当前的状态：是在线还是下线
     int state;            /* REDIS_CLUSTER_OK, REDIS_CLUSTER_FAIL, ... */
+    // 集群中至少处理着一个槽的节点的数量
     int size;             /* Num of master nodes with at least one slot */
+    // 集群节点名单（包括myself节点）
+    // 字典的键为节点的名字，字典的值为节点对应的clusterNode结构
     dict *nodes;          /* Hash table of name -> clusterNode structures */
     dict *nodes_black_list; /* Nodes we don't re-add for a few seconds. */
+    // 记录了当前节点正在迁移至其他节点的槽
     clusterNode *migrating_slots_to[REDIS_CLUSTER_SLOTS];
+    // 记录了当前节点正在从其他节点导入的槽
     clusterNode *importing_slots_from[REDIS_CLUSTER_SLOTS];
+    // 记录了集群中所有16384个槽的指派信息
     clusterNode *slots[REDIS_CLUSTER_SLOTS];
+    // 保存键与槽之间的关系
+    // 跳跃表每个节点的分值都是一个槽号，而每个节点的成员都是一个数据库键
     zskiplist *slots_to_keys;
     /* The following fields are used to take the slave state on elections. */
     mstime_t failover_auth_time; /* Time of previous or next election. */
@@ -166,27 +202,39 @@ typedef struct clusterState {
 /* Initially we don't know our "name", but we'll find it once we connect
  * to the first node, using the getsockname() function. Then we'll use this
  * address for all the next messages. */
+// 被选中节点信息
 typedef struct {
+    // 节点的名字
     char nodename[REDIS_CLUSTER_NAMELEN];
+    // 最后一次向该节点发送PING消息的时间戳
     uint32_t ping_sent;
+    // 最后一次从该节点接收到PONG消息的时间戳
     uint32_t pong_received;
+    // 节点的IP地址
     char ip[REDIS_IP_STR_LEN];  /* IP address last time it was seen */
+    // 节点的端口号
     uint16_t port;              /* port last time it was seen */
+    // 节点的标识值
     uint16_t flags;             /* node->flags copy */
     uint16_t notused1;          /* Some room for future improvements. */
     uint32_t notused2;
 } clusterMsgDataGossip;
 
 typedef struct {
+    // 已下线节点的名字
     char nodename[REDIS_CLUSTER_NAMELEN];
 } clusterMsgDataFail;
 
 typedef struct {
+    // channel参数的长度
     uint32_t channel_len;
+    // message参数的长度
     uint32_t message_len;
     /* We can't reclare bulk_data as bulk_data[] since this structure is
      * nested. The 8 bytes are removed from the count during the message
      * length computation. */
+    // 保存了客户端通过PUBLISH命令发送给节点的channel参数和message参数
+    // 定义为8字节只是为了对齐其他消息结构，实际的长度由保存的内容决定
     unsigned char bulk_data[8];
 } clusterMsgDataPublish;
 
@@ -196,24 +244,30 @@ typedef struct {
     unsigned char slots[REDIS_CLUSTER_SLOTS/8]; /* Slots bitmap. */
 } clusterMsgDataUpdate;
 
+// 消息的正文
 union clusterMsgData {
     /* PING, MEET and PONG */
+    // MEET、PING、PONG消息的正文
     struct {
         /* Array of N clusterMsgDataGossip structures */
+        // 每条MEET、PING、PONG消息都包含两个clusterMsgDataGossip结构
         clusterMsgDataGossip gossip[1];
     } ping;
 
     /* FAIL */
+    // FAIL消息的正文
     struct {
         clusterMsgDataFail about;
     } fail;
 
     /* PUBLISH */
+    // PUBLISH消息的正文
     struct {
         clusterMsgDataPublish msg;
     } publish;
 
     /* UPDATE */
+    // 其他消息的正文
     struct {
         clusterMsgDataUpdate nodecfg;
     } update;
@@ -221,27 +275,43 @@ union clusterMsgData {
 
 #define CLUSTER_PROTO_VER 0 /* Cluster bus protocol version. */
 
+// 消息头
 typedef struct {
+    // 消息的长度（包括这个消息头的长度和消息正文的长度）
     char sig[4];        /* Siganture "RCmb" (Redis Cluster message bus). */
+    // 消息的类型
     uint32_t totlen;    /* Total length of this message */
     uint16_t ver;       /* Protocol version, currently set to 0. */
     uint16_t notused0;  /* 2 bytes not used. */
     uint16_t type;      /* Message type */
+    // 消息正文包含的节点信息数量
+    // 只在发送MEET、PING、PONG这三种Gossip协议消息时使用
     uint16_t count;     /* Only used for some kind of messages. */
+    // 发送者所处的配置纪元
     uint64_t currentEpoch;  /* The epoch accordingly to the sending node. */
+    // 如果发送者是一个主节点，那么这里记录的是发送者的配置纪元
+    // 如果发送者是一个从节点，那么这里记录的是发送者正在复制的主节点的配置纪元
     uint64_t configEpoch;   /* The config epoch if it's a master, or the last
                                epoch advertised by its master if it is a
                                slave. */
     uint64_t offset;    /* Master replication offset if node is a master or
                            processed replication offset if node is a slave. */
+    // 发送者的名字（ID)
     char sender[REDIS_CLUSTER_NAMELEN]; /* Name of the sender node */
-    unsigned char myslots[REDIS_CLUSTER_SLOTS/8];
+    // 发送者目前的槽指派信息
+    unsigned char myslots[REDIS_CLUSTER_SLOTS / 8];
+    // 如果发送者是一个从节点，那么这里记录的是发送者正在复制的主节点的名字
+    // 如果发送者是一个主节点，那么这里记录的是REDIS_MODE_NULL_NAME
     char slaveof[REDIS_CLUSTER_NAMELEN];
     char notused1[32];  /* 32 bytes reserved for future usage. */
+    // 发送者的端口号
     uint16_t port;      /* Sender TCP base port */
+    // 发送者的标识值
     uint16_t flags;     /* Sender node flags */
+    // 发送者所处集群的状态
     unsigned char state; /* Cluster state from the POV of the sender */
     unsigned char mflags[3]; /* Message flags: CLUSTERMSG_FLAG[012]_... */
+    // 消息的正文（或者说内容）
     union clusterMsgData data;
 } clusterMsg;
 
