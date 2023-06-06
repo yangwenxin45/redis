@@ -950,7 +950,11 @@ struct redisServer {
     // 保存了毫秒级精度的系统当前UNIX时间戳，每100ms更新一次
     long long mstime;       /* Like 'unixtime' but with milliseconds resolution. */
     /* Pubsub */
+    // 保存所有频道的订阅关系
+    // 这个字典的键是某个被订阅的频道，而链表的值则是一个链表，链表里面记录了所有订阅这个频道的客户端
     dict *pubsub_channels;  /* Map channels to list of subscribed clients */
+    // 保存所有模式订阅关系
+    // pubsub_patterns属性是一个链表，链表中的每个节点都包含着一个pubsub Pattern结构
     list *pubsub_patterns;  /* A list of pubsub_patterns */
     int notify_keyspace_events; /* Events to propagate via Pub/Sub. This is an
                                    xor of REDIS_NOTIFY... flags. */
@@ -989,7 +993,9 @@ struct redisServer {
 };
 
 typedef struct pubsubPattern {
+    // 订阅模式的客户端
     redisClient *client;
+    // 被订阅的模式
     robj *pattern;
 } pubsubPattern;
 
