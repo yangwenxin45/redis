@@ -478,6 +478,8 @@ typedef struct redisDb {
     dict *expires;              /* Timeout of keys with a timeout set */
     dict *blocking_keys;        /* Keys with clients waiting for data (BLPOP) */
     dict *ready_keys;           /* Blocked keys that received a PUSH */
+    // 正在被watch命令监视的键
+    // 这个字典的键是某个被watch命令监视的数据库键，而字典的值则是一个链表
     dict *watched_keys;         /* WATCHED keys for MULTI/EXEC CAS */
     struct evictionPoolEntry *eviction_pool;    /* Eviction pool of keys */
     int id;                     /* Database ID */
@@ -486,13 +488,18 @@ typedef struct redisDb {
 
 /* Client MULTI/EXEC state */
 typedef struct multiCmd {
+    // 参数
     robj **argv;
+    // 参数数量
     int argc;
+    // 命令指针
     struct redisCommand *cmd;
 } multiCmd;
 
 typedef struct multiState {
+    // 事务队列，FIFO顺序
     multiCmd *commands;     /* Array of MULTI commands */
+    // 已入队命令计数
     int count;              /* Total number of MULTI commands */
     int minreplicas;        /* MINREPLICAS for synchronous replication */
     time_t minreplicas_timeout; /* MINREPLICAS timeout as unixtime. */
@@ -587,6 +594,7 @@ typedef struct redisClient {
     // 从服务器的监听端口号
     int slave_listening_port; /* As configured with: SLAVECONF listening-port */
     int slave_capa;         /* Slave capabilities: SLAVE_CAPA_* bitwise OR. */
+    // 事务状态
     multiState mstate;      /* MULTI/EXEC state */
     int btype;              /* Type of blocking op if REDIS_BLOCKED. */
     blockingState bpop;     /* blocking state */
