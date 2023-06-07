@@ -1038,10 +1038,15 @@ struct redisFunctionSym {
     unsigned long pointer;
 };
 
+// sort命令为每个被排序的键都创建一个与键长度相同的数组，数组的每个项都是一个redisSortObject结构
 typedef struct _redisSortObject {
+    // 被排序键的值
     robj *obj;
+    // 权重
     union {
+        // 排序数字值时使用
         double score;
+        // 排序带有by选项的字符串值时使用
         robj *cmpobj;
     } u;
 } redisSortObject;
