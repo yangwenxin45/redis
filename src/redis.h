@@ -750,6 +750,7 @@ struct redisServer {
     // 一个链表，保存了所有客户端状态
     list *clients;              /* List of active clients */
     list *clients_to_close;     /* Clients to close asynchronously */
+    // monitors是保存了所有监视器的链表
     list *slaves, *monitors;    /* List of slaves and MONITORs */
     redisClient *current_client; /* Current client, only used on crash report */
     int clients_paused;         /* True if clients are currently paused */
